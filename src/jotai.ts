@@ -10,7 +10,7 @@ export const SelectionAtom = atom((get): SelectedItem | null => {
   const { selectedItemID: ID } = get(AppState);
   if (ID === '') return null;
   const item = get(AppDrawings).find((item) => item.id === ID);
-  if (item) {
+  if (item && item.visible !== false) {
     switch (item.type) {
       case 'rectangle':
       case 'ellipse':

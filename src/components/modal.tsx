@@ -97,6 +97,19 @@ export function DownloadModal({
   const [background, setBackground] = useState(true);
   const [padding, setPadding] = useState(0);
 
+  const visibleItems = useMemo(
+    () => items.filter((item) => item.visible !== false),
+    [items]
+  );
+
+  const activeSelections = useMemo(
+    () =>
+      main.multipleSelections.filter((id) =>
+        visibleItems.some((i) => i.id === id)
+      ),
+    [main.multipleSelections, visibleItems]
+  );
+
   function adjustItemsXY(
     items: CanvasItem[],
     x: number,
@@ -113,37 +126,37 @@ export function DownloadModal({
   }
 
   const imgWidth = useMemo(() => {
+    if (visibleItems.length === 0) {
+      if (canvasRef.current) canvasRef.current.src = '';
+      canvasBlob.current = '';
+      return 0;
+    }
+
     let c = document.createElement('canvas') as HTMLCanvasElement;
     let ctx = c.getContext('2d')!;
     let bounds;
-    if (main.multipleSelections.length > 0) {
-      bounds = getMultipleSelectionBounds(main.multipleSelections, items);
-    } else {
-      bounds = getMultipleSelectionBounds(
-        items.map((i) => i.id),
-        items
-      );
-    }
+    const targetItemIds =
+      activeSelections.length > 0
+        ? activeSelections
+        : visibleItems.map((i) => i.id);
+
+    bounds = getMultipleSelectionBounds(targetItemIds, visibleItems);
 
     const padding2x = padding * 2;
     const x = -1 * bounds.x + padding;
     const y = -1 * bounds.y + padding;
-    let modifiedItems;
-    if (main.multipleSelections.length > 0) {
-      let v = items.filter((i) => main.multipleSelections.includes(i.id));
-      modifiedItems = adjustItemsXY(v, x, y);
-    } else {
-      modifiedItems = adjustItemsXY(items, x, y);
-    }
+    let modifiedItems = adjustItemsXY(
+      visibleItems.filter((i) => targetItemIds.includes(i.id)),
+      x,
+      y
+    );
 
     bounds = getMultipleSelectionBounds(
-      main.multipleSelections.length > 0
-        ? main.multipleSelections
-        : modifiedItems.map((i) => i.id),
+      modifiedItems.map((i) => i.id),
       modifiedItems
     );
-    c.width = bounds.width + padding2x;
-    c.height = bounds.height + padding2x;
+    c.width = Math.max(1, bounds.width + padding2x);
+    c.height = Math.max(1, bounds.height + padding2x);
     ctx.save();
     if (background) {
       ctx.fillStyle =
@@ -157,15 +170,16 @@ export function DownloadModal({
       renderElements(ctx, modifiedItems);
     }
     c.toBlob((blob) => {
-      if (blob) {
-        canvasRef.current!.src = URL.createObjectURL(blob);
+      if (blob && canvasRef.current) {
+        canvasRef.current.src = URL.createObjectURL(blob);
         canvasBlob.current = URL.createObjectURL(blob);
       }
     }, 'image/png');
     return bounds.width + padding2x;
-  }, [background, padding]);
+  }, [background, padding, visibleItems, activeSelections]);
 
   function saveToDisk() {
+    if (visibleItems.length === 0 || !canvasBlob.current) return;
     const link = document.createElement('a');
     link.download = `draaaw-${new Date().toISOString()}.png`;
     link.href = canvasBlob.current;
@@ -206,11 +220,17 @@ export function DownloadModal({
               </svg>
             </button>
           </div>
-          <div className="p-4 flex justify-center space-y-6 bg-[url('/trbackground.png')]">
-            <img
-              ref={canvasRef}
-              style={{ width: imgWidth, objectFit: 'contain' }}
-            />
+          <div className="p-4 flex justify-center space-y-6 bg-[url('/trbackground.png')] min-h-[160px] items-center">
+            {visibleItems.length === 0 ? (
+              <p className="text-sm text-[var(--accents-5)] italic py-8">
+                No visible layers to export
+              </p>
+            ) : (
+              <img
+                ref={canvasRef}
+                style={{ width: imgWidth, objectFit: 'contain' }}
+              />
+            )}
           </div>
           <div className="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b justify-between">
             <div className="flex gap-4 items-center">
@@ -236,9 +256,14 @@ export function DownloadModal({
             </div>
             <button
               onClick={saveToDisk}
+              disabled={visibleItems.length === 0}
               data-modal-hide="staticModal"
               type="button"
-              className="text-white bg-[darkorange] focus:ring-4 focus:outline-none focus:ring-[#faecd2] font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+              className={`text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center ${
+                visibleItems.length === 0
+                  ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                  : 'bg-[darkorange] hover:opacity-90 focus:ring-4 focus:outline-none focus:ring-[#faecd2]'
+              }`}
             >
               Download
             </button>

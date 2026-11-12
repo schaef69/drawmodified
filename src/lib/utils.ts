@@ -841,6 +841,7 @@ export function getItemEnclosingPoint(
   let boundingItems: { id: string; area: number; fill: boolean }[] = [];
   for (let i = items.length - 1; i >= 0; i--) {
     const item = items[i];
+    if (item.visible === false) continue;
     switch (item.type) {
       case 'line':
       case 'arrow':
@@ -1013,6 +1014,7 @@ export function getMultipleSelection(
 
   const selectedItems: string[] = [];
   items.forEach((item) => {
+    if (item.visible === false) return;
     switch (item.type) {
       case 'diamond':
       case 'rectangle':
@@ -1079,7 +1081,23 @@ export function getMultipleSelectionBounds(
   selectedItems: string[],
   items: CanvasItem[]
 ) {
-  const selection = items.filter((item) => selectedItems.includes(item.id));
+  const selection = items.filter(
+    (item) => selectedItems.includes(item.id) && item.visible !== false
+  );
+  if (selection.length === 0) {
+    return {
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      resizeAreas: {
+        tl: { x: 0, y: 0 },
+        tr: { x: 0, y: 0 },
+        bl: { x: 0, y: 0 },
+        br: { x: 0, y: 0 },
+      },
+    };
+  }
   const bounds: MultipleSelection = {
     x: Infinity,
     y: Infinity,

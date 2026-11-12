@@ -50,12 +50,13 @@ export async function renderElements(
   ctx: CanvasRenderingContext2D,
   items: CanvasItem[]
 ) {
-  const ims = items.filter((item) => item.type === 'image') as Image[];
+  const visibleItems = items.filter((item) => item.visible !== false);
+  const ims = visibleItems.filter((item) => item.type === 'image') as Image[];
   if (ims.length > Object.keys(imageData).length) {
     imageData = (await loadImages(ims)) as any;
   }
 
-  items.forEach((item) => {
+  visibleItems.forEach((item) => {
     switch (item.type) {
       case 'pencil':
         pencilDraw(ctx, item);

@@ -39,6 +39,7 @@ interface CanvasItemConstants {
   x: number;
   y: number;
   opacity: number;
+  visible?: boolean;
 }
 
 export type StrokeWidth = 2 | 3 | 4;

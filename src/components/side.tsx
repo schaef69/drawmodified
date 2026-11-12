@@ -15,11 +15,12 @@ import {
 import Tools from './tools';
 import { closeMenus } from '../lib/utils';
 import Menu from './menu';
+import LayersList from './layersList';
 
 export default function Side() {
     const [closed, setClosed] = useState(true);
     const [main] = useAtom(AppState);
-    const [width] = useState(200);
+    const [width] = useState(240);
     const sideRef = useRef(null);
     const [, setTheme] = useState<'dark' | 'light'>('light');
     const tool = main.tool;
@@ -74,6 +75,7 @@ export default function Side() {
                         <Layers />
                         <Actions />
                     </div>
+                    <LayersList />
                 </div>
                 <a
                     href="https://github.com/dawkaka/drawapp"
